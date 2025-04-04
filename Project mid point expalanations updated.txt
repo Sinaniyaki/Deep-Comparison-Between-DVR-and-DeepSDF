@@ -1,0 +1,75 @@
+chnged the environment.yaml for dvr from python 3.82 to 3.7
+
+Then I made the environment dvr myself since the environment.yaml file did not work
+
+tried installing the right torchvision and pytorch version as stated in the github however I could not install them with both conda or pip
+
+decided to change the version of both in environment.yaml file that I have
+
+  - pytorch=1.7.1   - torchvision=0.8.2
+
+downloaded the dataset using DVR github bash script to download them; however, I was reveicing error trying to download them using bash script indicating indows line endings (\r\n) being interpreted incorrectly in a bash environment 
+I only downloaded 
+
+in order to use the DTU dataset there was a default configuraion file already in the repository that I thought by modifying it we can make it specific for DTU dataset
+
+How Were These Numbers Chosen?
+1. Dataset Parameters (data section):
+n_views: 49:
+
+The DTU dataset provides 49 to 64 images per scene, and we select 49 to ensure a consistent multi-view setup.
+This allows the DVR model to utilize as many views as possible for reconstruction.
+n_views_input: 10:
+
+Using 10 input views strikes a balance between diversity of perspectives and computational efficiency.
+Too few views may result in lower reconstruction quality, while too many may overburden memory and processing power.
+img_size: [1600, 1200]:
+
+The DTU dataset images are 1600x1200 pixels, as mentioned in the dataset documentation.
+Maintaining the original resolution ensures high-quality input data for 3D reconstruction.
+depth_range: [0, 2.4]:
+
+Derived from typical depth ranges used in multi-view stereo settings.
+Ensures the depth maps are properly scaled for the DVR's volume rendering process.
+
+When tried to run a test with the pre trained model with the config file I got an error indicates an issue with the PIL (Python Imaging Library), specifically with the Pillow package, which is the modern replacement for PIL.
+Therefore, tried uninstalling pillow and installing it again. pip uninstall pillow
+pip install pillow==8.0.1 and then verified the installation in the environment
+
+after fixing the above problem now I got a warning about compatibility of my graphic card which is rtx 3070 when running the demo to test
+I realized my torchvision and pytorch version are compatible; however, I had to change the version of cuda to 11
+
+It took a long time to get the environment right for the dvr for my specific system and finding out errors 
+I tried setting up the environment for DeepSDF; however, I ran into many issues in anaconda then tried wsl ubuntu on windows, and that also was very hard to achieve
+I believe maybe I should try harder on anaconda and spend more time to get the dependencies right in order to have the right environment. Moreover, I though about using vmware; however, it's gonna have a problem for the nvidia graphic card I have which would be hard to use in a virtual machine
+
+So now next step I am going to train the dvr method on dtu dataset not just generation. I faced a lot of issue when trying to train dvr on the dtu dataset. the nested folder really made it confusing for me to get it right for the config file.
+After spending a lot of time on the config file I still was not able to train the dvr on the dtu dataset
+This error means that the data loader isn’t finding any valid images for some scans—resulting in empty batches that lead to a "list index out of range" error. In other words, for each scan (e.g., scan106, scan118, scan65), the loader fails to load the expected “img” field.
+I used placeholders in the config file for training:
+img_folder: "{scan_id}/{scan_id}/image"
+depth_folder: "{scan_id}/{scan_id}/depth"
+mask_folder: "{scan_id}/{scan_id}/mask"
+I think in order to fix that I need to fix the directories manually so I don't have to use placeholders in order to process the data
+Since the DTU dataset you downloaded isn’t pre-split into “train”, “val”, or “test” folders, we removed those split parameters. This should force the loader to use all scans. However, if the loader expects a non-empty value or a certain behavior, that could cause issues. We tried setting splits to empty strings or removing them altogether.
+Then I tried to find the issue by using a single scan in the config file but still faced the same issue. 
+This indicates that the data loader isn’t finding any valid images, possibly due to a mismatch between the expected file path format and our actual dataset structure. 
+We are currently investigating whether the placeholder substitution in the configuration or the data loader code itself needs adjustment to properly locate the files. 
+Until this issue is resolved, we plan to document these challenges and propose potential solutions, such as modifying the loader’s path resolution or reorganizing the dataset structure.
+
+
+The biggest challenge so far was one setting up the environment that took a long time which we definitly did not expect to take that long and it made us realize we need to spend a lot more time on the preparation than we thoguht before
+
+To Note for deepsdf:
+Windows vs. Linux: Research software is often developed and tested primarily on Linux systems (e.g., Ubuntu), where package management (e.g., apt) and library linking are more straightforward.
+ Windows systems often lack native support for certain tools and libraries, requiring additional steps like installing vcpkg, CMake, and Visual Studio Build Tools.
+WSL (Windows Subsystem for Linux): While WSL brings Linux capabilities to Windows, it introduces another layer of complexity, particularly with GUI libraries like OpenGL (Pangolin). WSL might not fully support all graphics and OpenGL features out of the box. 
+CMake Configuration: CMake needs precise paths to the right compiler and libraries. Incorrect CMAKE_PREFIX_PATH or missing *.cmake files can halt the build process.
+Compiler Compatibility: Different versions of GCC, Clang, or MSVC may not fully support the project’s codebase, leading to cryptic errors.
+Missing Dependencies: Encountered repeated errors with missing libraries like CLI11, Eigen3, Pangolin, and nanoflann, even after installation.
+Build Tool Confusion: Initially struggled with vcpkg on Windows and later shifted to using apt on WSL for easier package management.
+CMake Configuration Errors: Faced issues with incorrect CMAKE_PREFIX_PATH and required manual specification of paths for each dependency.
+Compilation Failures: Encountered multiple build errors related to OpenGL functions (glUniform* and glShaderSource) not being recognized.
+Pangolin Issues: The library installed successfully, but was not found by pkg-config, leading to glsl.hpp errors during the build process.
+Switching Environments: Moved from using Anaconda on Windows to Ubuntu WSL to bypass complex setup issues on Windows.
+Graphics Compatibility: OpenGL dependencies not fully supported or linked correctly on WSL, causing shader-related build errors.
